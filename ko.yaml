@@ -1,8 +1,8 @@
 package:
   name: ko
   version: 0.16.0
-  epoch: 1235
-  description: i forgot to bump the epoch
+  epoch: 1236
+  description: i did not forgot to bump the epoch
   copyright:
     - license: Apache-2.0
 
