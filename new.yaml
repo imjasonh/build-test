@@ -1,0 +1,65 @@
+package:
+  name: new
+  version: 0.17.0
+  epoch: 1
+  description: Build OCI images using APK directly without Dockerfile
+  copyright:
+    - license: Apache-2.0
+  dependencies:
+    runtime:
+      - ca-certificates-bundle
+
+environment:
+  contents:
+    packages:
+      - build-base
+      - busybox
+      - ca-certificates-bundle
+      - go
+
+pipeline:
+  - uses: git-checkout
+    with:
+      repository: https://github.com/chainguard-dev/apko
+      tag: v${{package.version}}
+      expected-commit: 636d87f1c66181d4f1ff146595ddc157a033f723
+
+  - uses: go/bump
+    with:
+      deps: github.com/docker/docker@v26.1.4
+
+  - runs: |
+      make apko
+      install -m755 -D ./apko "${{targets.contextdir}}"/usr/bin/apko
+
+  - uses: strip
+
+test:
+  pipeline:
+    - runs: |
+        apko version || exit 1
+    - runs: |
+        cat <<EOF >> /tmp/wolfi-base.yaml
+        contents:
+          keyring:
+            - https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+          repositories:
+            - https://packages.wolfi.dev/os
+          packages:
+            - wolfi-base
+
+        cmd: /bin/sh -l
+
+        archs:
+        - x86_64
+        - aarch64
+        EOF
+
+        apko build  /tmp/wolfi-base.yaml test test.tar
+
+update:
+  enabled: true
+  github:
+    identifier: chainguard-dev/apko
+    strip-prefix: v
+    use-tag: true
